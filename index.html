@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora de Tasa de Datos ISDB-T</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f7f7f7;
+            color: #555;
+        }
+        .error {
+            background-color: #ffdddd;
+        }
+        .result {
+            font-weight: bold;
+            color: #444;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .input-group label {
+            margin-right: 10px;
+            color: #333;
+        }
+        .input-group select {
+            flex: 1;
+        }
+        button {
+            display: block;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calculadora de Tasa de Datos ISDB-T</h1>
+    <div class="container">
+        <div class="input-group">
+            <label for="guardInterval">Tiempo de Guarda:</label>
+            <select id="guardInterval">
+                <option value="1/4">1/4</option>
+                <option value="1/8">1/8</option>
+                <option value="1/16" selected>1/16</option>
+                <option value="1/32">1/32</option>
+            </select>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>CAPA</th>
+                    <th>Número de Segmentos</th>
+                    <th>Modulación</th>
+                    <th>Tasa de Código</th>
+                    <th>Tasa de Datos (Mbps)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Capa A</td>
+                    <td><input type="number" id="segmentsA" value="1" min="0" max="13"></td>
+                    <td>
+                        <select id="modulationA">
+                            <option value="QPSK">QPSK</option>
+                            <option value="16-QAM">16-QAM</option>
+                            <option value="64-QAM">64-QAM</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="codingRateA">
+                            <option value="1/2">1/2</option>
+                            <option value="2/3">2/3</option>
+                            <option value="3/4">3/4</option>
+                            <option value="5/6">5/6</option>
+                            <option value="7/8">7/8</option>
+                        </select>
+                    </td>
+                    <td><span id="dataRateA"></span></td>
+                </tr>
+                <tr>
+                    <td>Capa B</td>
+                    <td><input type="number" id="segmentsB" value="12" min="0" max="13"></td>
+                    <td>
+                        <select id="modulationB">
+                            <option value="QPSK">QPSK</option>
+                            <option value="16-QAM">16-QAM</option>
+                            <option value="64-QAM">64-QAM</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="codingRateB">
+                            <option value="1/2">1/2</option>
+                            <option value="2/3">2/3</option>
+                            <option value="3/4">3/4</option>
+                            <option value="5/6">5/6</option>
+                            <option value="7/8">7/8</option>
+                        </select>
+                    </td>
+                    <td><span id="dataRateB"></span></td>
+                </tr>
+                <tr>
+                    <td>Capa C</td>
+                    <td><input type="number" id="segmentsC" value="0" min="0" max="13"></td>
+                    <td>
+                        <select id="modulationC">
+                            <option value="QPSK">QPSK</option>
+                            <option value="16-QAM">16-QAM</option>
+                            <option value="64-QAM">64-QAM</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="codingRateC">
+                            <option value="1/2">1/2</option>
+                            <option value="2/3">2/3</option>
+                            <option value="3/4">3/4</option>
+                            <option value="5/6">5/6</option>
+                            <option value="7/8">7/8</option>
+                        </select>
+                    </td>
+                    <td><span id="dataRateC"></span></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="result">Tasa Total (Mbps)</td>
+                    <td class="result"><span id="totalDataRate"></span></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="calculateDataRates()">Calcular</button>
+    </div>
+
+    <script>
+        function getBitsPerSymbol(modulation) {
+            switch (modulation) {
+                case 'QPSK':
+                    return 2;
+                case '16-QAM':
+                    return 4;
+                case '64-QAM':
+                    return 6;
+                default:
+                    return 0;
+            }
+        }
+
+        function getCodingRateFraction(codingRate) {
+            switch (codingRate) {
+                case '1/2':
+                    return 1 / 2;
+                case '2/3':
+                    return 2 / 3;
+                case '3/4':
+                    return 3 / 4;
+                case '5/6':
+                    return 5 / 6;
+                case '7/8':
+                    return 7 / 8;
+                default:
+                    return 0;
+            }
+        }
+
+        function calculateDataRates() {
+            const guardIntervalInput = document.getElementById('guardInterval').value;
+            const guardIntervalFraction = guardIntervalInput.split('/');
+            const guardInterval = 1 + (parseInt(guardIntervalFraction[0]) / parseInt(guardIntervalFraction[1]));
+            const segmentBandwidth = 6000 / 13;
+
+            let totalDataRate = 0;
+
+            function calculateLayerDataRate(layer) {
+                const segments = parseInt(document.getElementById('segments' + layer).value);
+                const modulation = document.getElementById('modulation' + layer).value;
+                const codingRate = document.getElementById('codingRate' + layer).value;
+                const dataRateElement = document.getElementById('dataRate' + layer);
+
+                if (segments < 0 || segments > 13) {
+                    document.getElementById('segments' + layer).classList.add('error');
+                    dataRateElement.innerText = "No puedes asignar más de 13 segmentos";
+                    return 0;
+                } else {
+                    document.getElementById('segments' + layer).classList.remove('error');
+                    dataRateElement.innerText = "";
+                }
+
+                const bitsPerSymbol = getBitsPerSymbol(modulation);
+                const codingRateFraction = getCodingRateFraction(codingRate);
+
+                const dataRate = (segmentBandwidth * bitsPerSymbol * codingRateFraction * segments) / guardInterval;
+
+                if (isNaN(dataRate)) {
+                    dataRateElement.innerText = "Error en los datos";
+                    document.getElementById('segments' + layer).classList.add('error');
+                    return 0;
+                } else {
+                    dataRateElement.innerText = (dataRate / 1000).toFixed(3);
+                    document.getElementById('segments' + layer).classList.remove('error');
+                }
+
+                return dataRate;
+            }
+
+            const segmentsA = parseInt(document.getElementById('segmentsA').value);
+            const segmentsB = parseInt(document.getElementById('segmentsB').value);
+            const segmentsC = parseInt(document.getElementById('segmentsC').value);
+            const totalSegments = segmentsA + segmentsB + segmentsC;
+
+            if (totalSegments > 13) {
+                document.getElementById('segmentsA').classList.add('error');
+                document.getElementById('segmentsB').classList.add('error');
+                document.getElementById('segmentsC').classList.add('error');
+                alert("La suma de los segmentos no puede superar 13");
+                return;
+            } else {
+                document.getElementById('segmentsA').classList.remove('error');
+                document.getElementById('segmentsB').classList.remove('error');
+                document.getElementById('segmentsC').classList.remove('error');
+            }
+
+            totalDataRate += calculateLayerDataRate('A');
+            totalDataRate += calculateLayerDataRate('B');
+            totalDataRate += calculateLayerDataRate('C');
+
+            document.getElementById('totalDataRate').innerText = (totalDataRate / 1000).toFixed(3);
+        }
+    </script>
+</body>
+</html>
